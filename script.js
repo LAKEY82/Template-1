@@ -54,6 +54,7 @@ function startScrollAnimations() {
   seal.addEventListener("click", () => {
     if (envelope.classList.contains("opening")) return;
     envelope.classList.add("opening");
+    music.start();   // the seal tap counts as the user gesture browsers need
 
     setTimeout(() => {
       document.documentElement.classList.remove("locked");
@@ -139,29 +140,69 @@ function startScrollAnimations() {
   cal.innerHTML = html;
 })();
 
-/* ---------- Music player ---------- */
-(function initPlayer() {
+/* ---------- Music player ----------
+   Browsers block sound until the visitor interacts with the page, so we try
+   to play on load and, if that is blocked, start on the first tap (the wax seal). */
+const music = (function initPlayer() {
   const audio = document.getElementById("song");
   const btn = document.getElementById("playBtn");
   const bar = document.getElementById("progressBar");
+  let userPaused = false;
+  let fadeTimer;
+
+  const sync = () => btn.classList.toggle("playing", !audio.paused);
+  audio.addEventListener("play", sync);
+  audio.addEventListener("pause", sync);
+
+  function fadeIn(target = 0.8) {
+    clearInterval(fadeTimer);
+    audio.volume = 0;
+    fadeTimer = setInterval(() => {
+      audio.volume = Math.min(target, audio.volume + 0.05);
+      if (audio.volume >= target) clearInterval(fadeTimer);
+    }, 120);
+  }
+
+  async function start() {
+    if (userPaused || !audio.paused) return;
+    fadeIn();
+    try {
+      await audio.play();
+    } catch {
+      clearInterval(fadeTimer);   // still blocked, a later tap will start it
+    }
+  }
+
+  // 1) try immediately on load
+  start();
+
+  // 2) otherwise start on the first interaction anywhere on the page
+  const kick = () => {
+    start();
+    ["pointerdown", "keydown", "touchstart"].forEach(t => removeEventListener(t, kick, true));
+  };
+  ["pointerdown", "keydown", "touchstart"].forEach(t => addEventListener(t, kick, { capture: true, passive: true }));
 
   btn.addEventListener("click", async () => {
     if (audio.paused) {
+      userPaused = false;
+      fadeIn();
       try {
         await audio.play();
-        btn.classList.add("playing");
       } catch {
-        toast("Add your song as music/song.mp3 🎵");
+        toast("Unable to play the song");
       }
     } else {
+      userPaused = true;
       audio.pause();
-      btn.classList.remove("playing");
     }
   });
 
   audio.addEventListener("timeupdate", () => {
     if (audio.duration) bar.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
   });
+
+  return { start };
 })();
 
 /* ---------- Copy bank account ---------- */

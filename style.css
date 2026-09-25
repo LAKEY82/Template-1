@@ -669,7 +669,9 @@ html.locked, html.locked body { overflow: hidden; height: 100%; overscroll-behav
   max-width: 230px;
   margin: 0 auto;
 }
-.player-title { font-size: 14px; margin-bottom: 10px; }
+.player-title { font: 400 11px var(--caps); letter-spacing: .25em; text-transform: uppercase; }
+.player-track { font-size: 16px; margin: 2px 0 10px; color: var(--navy-ink); }
+.player-track em { font-size: 13px; color: var(--muted); }
 
 .progress {
   height: 2px;
@@ -680,7 +682,7 @@ html.locked, html.locked body { overflow: hidden; height: 100%; overscroll-behav
 .progress span {
   position: absolute;
   left: 0; top: 0; bottom: 0;
-  width: 18%;
+  width: 0%;
   background: var(--navy-ink);
   border-radius: 2px;
 }
